@@ -1,5 +1,4 @@
 import requests
-from abc import ABC, abstractmethod
 from llm_interface import LLMInterface
 
 class OllamaClient(LLMInterface):
@@ -12,6 +11,7 @@ class OllamaClient(LLMInterface):
         self.temperature = temperature
 
     def generate_jml(self, java_code: str, feedback: str = "") -> str:
+        """Generate JML annotations for the given Java code."""
         prompt = self._build_prompt(java_code, feedback)
         
         try:
@@ -22,30 +22,26 @@ class OllamaClient(LLMInterface):
                     "prompt": prompt,
                     "stream": False,
                     "options": {"temperature": self.temperature}
-                }
+                },
+                timeout=60  # Add timeout to prevent hanging
             )
             response.raise_for_status()
-            annotated_code = response.json()["response"]
+            annotated_code = response.json().get("response", "")
+            
             # Extract just the Java code if the model wrapped it in markdown
             if "```java" in annotated_code and "```" in annotated_code:
                 start = annotated_code.find("```java") + 7
                 end = annotated_code.rfind("```")
                 annotated_code = annotated_code[start:end].strip()
+                
             return annotated_code
-            #return self._remove_Markdown_around_code(response.json()["response"])
             
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Ollama connection failed: {str(e)}")
 
-    def _remove_Markdown_around_code(self, code: str):
-        lines = code.splitlines()
-
-        if len(lines) > 2:
-            lines = lines[1:-1]
-
-        return '\n'.join(lines)
-
-    def _build_prompt(self, java_code: str, feedback: str) -> str:
+    def _build_prompt(self, java_code: str, feedback: str = "") -> str:
+        """Build the prompt for the LLM to generate JML annotations."""
+        # Example of well-annotated code
         sample_code = """
 // It establishes that the sum is always non-negative and within the range of Integer
 
@@ -61,8 +57,9 @@ public class Calculator {
     }
 }
 """
-        return f"""
-        {feedback}
+
+        # Create the prompt with feedback if provided
+        prompt = f"""
         You are a Java Modeling Language (JML) expert. Generate correct JML annotations 
         for the following Java code following these rules:
         
@@ -73,13 +70,26 @@ public class Calculator {
         5. Validate data ranges with invariant clauses
         6. Do not use comments inside annotations
         
-        Return ONLY the JML annotations in Java comment format without explanations.
-        Return ONLY result code without any Mardown syntax.
+        Return ONLY the Java code with JML annotations in Java comment format without explanations.
+        Return ONLY result code without any Markdown syntax.
+        
         Example of code with JML annotations:
         {sample_code}
-        
-        Java Code:
-        {java_code}
-        
-        JML Annotations:
         """
+        
+        # Add feedback if available
+        if feedback:
+            prompt += f"""
+        Previous attempt had these issues:
+        {feedback}
+        
+        Please address these issues in your new annotations.
+        """
+            
+        # Add the code to annotate
+        prompt += f"""
+        Java Code to annotate:
+        {java_code}
+        """
+        
+        return prompt
