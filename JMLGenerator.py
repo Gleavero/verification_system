@@ -15,6 +15,7 @@ class JMLGenerator:
             capture_output=True,
             text=True
         )
+        print(f"Compile with openJML output: \n {result.stdout.lower()}")
         success = "error" not in result.stdout.lower()
         return {
             "success": success,
@@ -43,6 +44,7 @@ class JMLGenerator:
             # Compile with OpenJML
             result = self._compile_with_openjml(java_file_path)
             
+            print(f"Annotated code \n {annotated_code}")
             if result["success"]:
                 # Also save a permanent copy
                 try:

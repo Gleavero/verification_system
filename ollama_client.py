@@ -22,8 +22,8 @@ class OllamaClient(LLMInterface):
                     "prompt": prompt,
                     "stream": False,
                     "options": {"temperature": self.temperature}
-                },
-                timeout=60  # Add timeout to prevent hanging
+                }
+               # ,timeout=60  # Add timeout to prevent hanging
             )
             response.raise_for_status()
             annotated_code = response.json().get("response", "")
@@ -41,7 +41,7 @@ class OllamaClient(LLMInterface):
 
     def _build_prompt(self, java_code: str, feedback: str = "") -> str:
         """Build the prompt for the LLM to generate JML annotations."""
-        # Example of well-annotated code
+       # Example of well-annotated code
         sample_code = """
 // It establishes that the sum is always non-negative and within the range of Integer
 

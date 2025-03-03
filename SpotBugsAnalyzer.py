@@ -41,6 +41,8 @@ class SpotBugsAnalyzer:
                 text=True
             )
             
+            print(f"Output of SpotBugs - \n {result.stdout}")
+            
             return self._parse_errors(result.stdout + result.stderr)
             
         except Exception as e:
